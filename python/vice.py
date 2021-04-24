@@ -47,8 +47,6 @@ def create_destination_window():
     # vim.options['tabstop'] = 8
 
     dst_buffer = vim.current.buffer
-    # print('bufhidden', dst_buffer.options['bufhidden'])
-    # dst_buffer.options['bufhidden'] = 'do_something'
     dst_buffer.options['buftype'] = 'nofile'
 
     return ViceWindow(vim.current.window, WindowType.DESTINATION, tmp_file)
@@ -60,12 +58,6 @@ def get_windows(cur_buffer):
         return None
 
     if cur_window.window_type == WindowType.DESTINATION:
-        # print('valid', dst_buffer.valid)
-        # print('buflisted', dst_buffer.options['buflisted'])
-        # print('bufhidden', dst_buffer.options['bufhidden'])
-        # print('in ', dst_buffer in vim.buffers)
-        # if dst_buffer.valid or dst_buffer.options['buflisted']:
-        #     return cur_buffer, dst_buffer
         return cur_window.mirror, cur_window
 
     if cur_window.mirror is None:
@@ -85,7 +77,6 @@ def get_or_create_windows(cur_buffer):
     src_window.mirror = dst_window
     dst_window.mirror = src_window
 
-    # window_map[src_window.buffer] = src_window
     window_map[dst_window.buffer] = dst_window
 
     return src_window, dst_window
@@ -221,7 +212,7 @@ def view_assembly(compiler='gcc', parameters='', syntax='intel'):
     assembly_lines = []
 
     src_window.line_map = [0] * (len(src_window.buffer[:]) + 1)
-    dst_window.line_map = [0]  # [0] * (len(parsed_assembly_lines) + 1)
+    dst_window.line_map = [0] 
     for text, line_number in parsed_assembly_lines:
         assembly_lines.append(text)
         dst_window.line_map.append(line_number)
@@ -238,15 +229,9 @@ def view_assembly(compiler='gcc', parameters='', syntax='intel'):
     add_lines((src_window, dst_window))
 
     vim.current.window = src_window.window
-    # vim.current.buffer = src_window.buffer
-    # 'CursorMoved'
-    # au[tocmd] [group] {event} {pat} [nested] {cmd}
-    # vim.command('augroup vice')
-    # vim.command('autocmd CursorMoved vice*.s call ViceCursorMoved()')
 
 
 def schedule_update():
-    # print('schedule_update')
     cur_window = window_map.get(vim.current.buffer)
     if cur_window is None or cur_window.window_type == WindowType.DESTINATION:
         vim.command('autocmd! ViceOnChange')
@@ -258,7 +243,6 @@ def schedule_update():
 
 
 def update_assembly():
-    # print('update_assembly')
     cur_window = window_map.get(vim.current.buffer)
     cur_window.update_scheduled = False
     view_assembly()
@@ -282,13 +266,15 @@ def cursor_moved():
 
 place_id = 1
 
-
 def add_sign(sign_id: int, file_name: str, line: int):
     global place_id
     cmd = f'sign place {place_id} line={line} name=vice_sign_{sign_id} group=vice file={file_name}'
     # print(cmd)
     vim.command(cmd)
     place_id += 1
+
+def sign_unplace(buffer_name: str):
+    vim.command(f'sign unplace * group=vice file={buffer_name}')
 
 
 def add_lines(windows=None):
@@ -323,9 +309,6 @@ def add_lines(windows=None):
     src_window.lines_enabled = True
 
 
-def sign_unplace(buffer_name: str):
-    vim.command(f'sign unplace * group=vice file={buffer_name}')
-
 
 def clear_lines(clean_mirror=True):
     cur_buffer = vim.current.buffer
@@ -338,7 +321,7 @@ def clear_lines(clean_mirror=True):
         mirror = cur_window.mirror
         sign_unplace(mirror.buffer.name)
 
-        cur_window.lines_enabled = False
+    cur_window.lines_enabled = False
 
 
 def toggle_lines(windows=None):
