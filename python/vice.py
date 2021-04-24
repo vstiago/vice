@@ -1,12 +1,8 @@
-import os
-import re
-import subprocess
-import tempfile
 from enum import Enum
-from typing import List, Set, Tuple
 
-import cxxfilt
 import vim
+
+from vice_assembly import *
 
 window_map = {}
 
@@ -82,137 +78,32 @@ def get_or_create_windows(cur_buffer):
     return src_window, dst_window
 
 
-def assembly(vim_buffer, compiler: str, parameters: str, syntax: str):
-    splitted_path = os.path.splitext(vim_buffer.name)
-    current_extension = splitted_path[1] if len(splitted_path) > 1 else None
+def view_assembly(compiler='gcc', parameters='', syntax='intel'):
+    cur_buffer = vim.current.buffer
+    if cur_buffer.name.endswith('.s'):
+        return
 
-    tmp_file = tempfile.NamedTemporaryFile(mode='w',
-                                           suffix=current_extension,
-                                           prefix='vice',
-                                           delete=False)
-    for line in vim_buffer:
-        print(line, file=tmp_file)
-    tmp_file.close()
+    tmp_file, assembly_code = assembly(cur_buffer.name, cur_buffer[:], compiler,
+                                       parameters, syntax)
+    if tmp_file is None:
+        return
 
-    cur_window = window_map.get(vim_buffer)
+    cur_window = window_map.get(cur_buffer)
     if cur_window is None:
         cur_window = ViceWindow(vim.current.window, WindowType.SOURCE, tmp_file)
-        window_map[vim_buffer] = cur_window
+        window_map[cur_buffer] = cur_window
     else:
         cur_window.tmp_file = tmp_file
-
-    cmd = [compiler, tmp_file.name, '-g1', '-masm='+syntax, '-S',
-           '-o', '-']
-    cmd += filter(None, parameters.split(' '))
-    # print(cmd)
-    try:
-        code_ass = subprocess.check_output(cmd)
-    except subprocess.CalledProcessError as err:
-        print('Failed to compile.', err)
-        return
-    return str(code_ass, 'ascii').splitlines()
-
-
-def trim_comment(line):
-    output = line.split('#')[0]
-    return output.rstrip()
-
-
-def parse_used_labels(lines: List[str]) -> Set[str]:
-    used_labels = set()
-    re_label = re.compile('(\.[A-Za-z0-9_\.]+)')
-
-    for line in lines:
-        if line == '' or line[0] == '#' or line[0] == '.' or \
-                line[-1] == ':' or line.startswith('\t.'):
-            continue
-
-        label = re_label.search(line)
-        if label:
-            # print(line)
-            # print(label)
-            used_labels.add(label.group())
-
-    # print(used_labels)
-    return used_labels
-
-
-def parse_assembly(lines: List[str]) -> List[Tuple[str, int]]:
-    used_labels = parse_used_labels(lines)
-
-    other_labels = {'.ascii', '.asciz', '.string', '.float', '.single',
-                    '.double', '.quad', '.octa', '.long'}
-    valid_label = False
-    location_marker = f'\t.loc'
-    assembly_lines = []
-    source_line = 0
-
-    for line in lines:
-        if line == '':
-            valid_label = False
-            source_line = 0
-            continue
-
-        if line[0] == '.':
-            if line[:-1] in used_labels:
-                assembly_lines.append((line, 0))
-                valid_label = True
-            continue
-
-        if line.startswith('\t.'):
-            tokens = line.split('\t')
-            if valid_label and tokens[1] in other_labels:
-                assembly_lines.append((line, 0))
-            else:
-                valid_label = False
-
-            if line.startswith(location_marker):
-                tokens = line.replace('\t', ' ').split(' ')
-                # print(tokens)
-                source_line = int(tokens[3])
-            continue
-
-        valid_label = False
-
-        if line.startswith('#'):
-            continue
-
-        if line[:-1].isnumeric():
-            continue
-
-        if line[0] == '_':
-            func_name = line.split(':')[0]
-            demangled_name = cxxfilt.demangle(func_name)
-            assembly_lines.append((demangled_name + ':', 0))
-            source_line = 0
-            continue
-
-        line = trim_comment(line)
-        if line == '':
-            continue
-
-        assembly_lines.append((line, source_line))
-
-    return assembly_lines
-
-
-def view_assembly(compiler='gcc', parameters='', syntax='intel'):
-    if vim.current.buffer.name.endswith('.s'):
-        return
-
-    assembly_code = assembly(vim.current.buffer, compiler, parameters, syntax)
-    if assembly_code is None:
-        return
 
     src_window, dst_window = get_or_create_windows(vim.current.buffer)
 
     parsed_assembly_lines = parse_assembly(assembly_code)
     # print(parsed_assembly_lines)
-    
+
     assembly_lines = []
 
     src_window.line_map = [0] * (len(src_window.buffer[:]) + 1)
-    dst_window.line_map = [0] 
+    dst_window.line_map = [0]
     for text, line_number in parsed_assembly_lines:
         assembly_lines.append(text)
         dst_window.line_map.append(line_number)
@@ -266,12 +157,14 @@ def cursor_moved():
 
 place_id = 1
 
+
 def add_sign(sign_id: int, file_name: str, line: int):
     global place_id
     cmd = f'sign place {place_id} line={line} name=vice_sign_{sign_id} group=vice file={file_name}'
     # print(cmd)
     vim.command(cmd)
     place_id += 1
+
 
 def sign_unplace(buffer_name: str):
     vim.command(f'sign unplace * group=vice file={buffer_name}')
@@ -309,7 +202,6 @@ def add_lines(windows=None):
     src_window.lines_enabled = True
 
 
-
 def clear_lines(clean_mirror=True):
     cur_buffer = vim.current.buffer
     sign_unplace(cur_buffer.name)
@@ -336,4 +228,3 @@ def toggle_lines(windows=None):
         clear_lines()
     else:
         add_lines(windows)
-
