@@ -97,14 +97,11 @@ def view_assembly(compiler='gcc', parameters='', syntax='intel'):
 
     src_window, dst_window = get_or_create_windows(vim.current.buffer)
 
-    parsed_assembly_lines = parse_assembly(assembly_code)
-    # print(parsed_assembly_lines)
-
     assembly_lines = []
 
     src_window.line_map = [0] * (len(src_window.buffer[:]) + 1)
     dst_window.line_map = [0]
-    for text, line_number in parsed_assembly_lines:
+    for text, line_number in parse_assembly(assembly_code):
         assembly_lines.append(text)
         dst_window.line_map.append(line_number)
         if line_number != 0 and src_window.line_map[line_number] == 0:
@@ -130,7 +127,7 @@ def schedule_update():
     if cur_window.update_scheduled:
         return
     cur_window.update_scheduled = True
-    vim.command("let bla = timer_start(1000, 'ViceUpdateAssembly')")
+    vim.command("let refresh_timer = timer_start(1000, 'ViceUpdateAssembly')")
 
 
 def update_assembly():
@@ -206,14 +203,14 @@ def clear_lines(clean_mirror=True):
     cur_buffer = vim.current.buffer
     sign_unplace(cur_buffer.name)
 
+    cur_window = window_map.get(cur_buffer)
+    if cur_window is None:
+        return
+    cur_window.lines_enabled = False
+
     if clean_mirror:
-        cur_window = window_map.get(cur_buffer)
-        if cur_window is None:
-            return
         mirror = cur_window.mirror
         sign_unplace(mirror.buffer.name)
-
-    cur_window.lines_enabled = False
 
 
 def toggle_lines(windows=None):
