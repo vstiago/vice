@@ -28,6 +28,9 @@ def assembly(source_name: str, source_lines: List[str], compiler: str,
     except subprocess.CalledProcessError as err:
         print('Failed to compile.', err)
         return None, None
+    except FileNotFoundError as err:
+        print('File not found.', err)
+        return None, None
 
     return tmp_file, str(code_ass, 'ascii').splitlines()
 
