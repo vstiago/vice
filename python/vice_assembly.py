@@ -41,7 +41,6 @@ def parse_used_labels(lines: List[str]) -> Set[str]:
                 line.startswith('\t.'):
             continue
 
-        # if line[-1] == ':':
         if line[0] == '_':
             func_name = line.split(':')[0]
             demangled_name = cxxfilt.demangle(func_name)
@@ -56,14 +55,14 @@ def parse_used_labels(lines: List[str]) -> Set[str]:
     return used_labels
 
 
-def trim_comment(line):
-    output = line.split('#')[0]
+def trim_comment(line, comment_marker='#'):
+    output = line.split(comment_marker)[0]
     return output.rstrip()
 
 
-def map_assembly_lines(lines: List[str]) -> List[Tuple[str, int]]:
-    location_marker = f'\t.loc'
-    assembly_lines = []
+def map_assembly_lines(lines: List[str], location_marker='\t.loc') -> \
+        List[Tuple[str, int]]:
+    result = []
     source_line = 0
 
     for line in lines:
@@ -72,11 +71,11 @@ def map_assembly_lines(lines: List[str]) -> List[Tuple[str, int]]:
             continue
 
         if line[0] == '.':
-            assembly_lines.append((line, 0))
+            result.append((line, 0))
             continue
 
         if line.startswith('\t.'):
-            assembly_lines.append((line, 0))
+            result.append((line, 0))
 
             if line.startswith(location_marker):
                 tokens = line.replace('\t', ' ').split(' ')
@@ -90,7 +89,7 @@ def map_assembly_lines(lines: List[str]) -> List[Tuple[str, int]]:
         if line[0] == '_':
             func_name = line.split(':')[0]
             demangled_name = cxxfilt.demangle(func_name)
-            assembly_lines.append((demangled_name + ':', 0))
+            result.append((demangled_name + ':', 0))
             source_line = 0
             continue
 
@@ -98,9 +97,9 @@ def map_assembly_lines(lines: List[str]) -> List[Tuple[str, int]]:
         if line == '':
             continue
 
-        assembly_lines.append((line, source_line))
+        result.append((line, source_line))
 
-    return assembly_lines
+    return result
 
 
 class LabelFilter:
