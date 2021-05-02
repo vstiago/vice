@@ -38,7 +38,15 @@ def parse_used_labels(lines: List[str]) -> Set[str]:
 
     for line in lines:
         if line == '' or line[0] == '#' or line[0] == '.' or \
-                line[-1] == ':' or line.startswith('\t.'):
+                line.startswith('\t.'):
+            continue
+
+        # if line[-1] == ':':
+        if line[0] == '_':
+            func_name = line.split(':')[0]
+            demangled_name = cxxfilt.demangle(func_name)
+            line = demangled_name + ':'
+            used_labels.add(demangled_name)
             continue
 
         label = re_label.search(line)
@@ -111,10 +119,10 @@ class LabelFilter:
             self.valid_label = False
             return False
 
-        if line[0] == '.':
-            if line[:-1] in self.used_labels:
-                self.valid_label = True
-                return True
+        # if line[0] == '.':
+        if line[:-1] in self.used_labels:
+            self.valid_label = True
+            return True
 
         if line.startswith('\t.'):
             tokens = line.split('\t')
@@ -122,6 +130,7 @@ class LabelFilter:
                 return True
 
         self.valid_label = False
+
         return False
 
 

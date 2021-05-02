@@ -36,9 +36,11 @@ function! ViceAddLines()
   python3 vice.add_lines()
 endfunction
 
+
 function! ViceToggleLines()
   python3 vice.toggle_lines()
 endfunction
+
 
 function! ViceScheduleUpdate()
   python3 vice.schedule_update()
@@ -50,7 +52,7 @@ function! ViceUpdateAssembly(timer_id)
 endfunction
 
 
-
+" Dark
 highlight ViceLine1 ctermbg=18 guibg=#000087 " DarkBlue
 highlight ViceLine2 ctermbg=22 guibg=#005f00 " DarkGreen
 highlight ViceLine3 ctermbg=54 guibg=#5f0087 " Purple4
@@ -68,6 +70,7 @@ highlight ViceLine14 ctermbg=52 guibg=#5f0000 " DarkRed
 highlight ViceLine15 ctermbg=23 guibg=#005f5f " DeepSkyBlue4
 highlight ViceLine16 ctermbg=1 guibg=#800000 " Maroon
 
+" Light
 
 sign define vice_sign_1 linehl=ViceLine1
 sign define vice_sign_2 linehl=ViceLine2
