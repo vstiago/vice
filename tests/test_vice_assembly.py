@@ -6,26 +6,41 @@ from ..python.vice_assembly import compile_code, parse_used_labels, \
 
 
 def test_compile_code_no_extension():
+    assembly_code = compile_code('no_extension', ['void foo() { return; }'])
+    assert len(assembly_code) == 0
+
+
+def test_compile_code_no_extension_with_language():
     assembly_code = compile_code('no_extension', ['void foo() { return; }'],
-                                 'gcc', '-x c', 'intel')
+                                 parameters='-x c')
     assert len(assembly_code) != 0
 
 
 def test_compile_code_invalid_compiler():
     assembly_code = compile_code('foo.cc', ['void foo() { return; }'],
-                                 'invalid_compiler', '', 'intel')
+                                 compiler='invalid_compiler')
     assert len(assembly_code) == 0
 
 
+def test_compile_code_invalid_syntax():
+    assembly_code = compile_code('foo.cc', ['void foo() { return; }'],
+                                 syntax='invalid_syntax')
+    assert len(assembly_code) == 0
+
+
+def test_compile_code_no_syntax():
+    assembly_code = compile_code('foo.cc', ['void foo() { return; }'],
+                                 syntax='')
+    assert len(assembly_code) != 0
+
+    
 def test_compile_code_failed_to_compile():
-    assembly_code = compile_code('foo.cc', ['void foo() { return; '], 'gcc', '',
-                                 'intel')
+    assembly_code = compile_code('foo.cc', ['void foo() { return; '])
     assert len(assembly_code) == 0
 
 
 def test_compile_code():
-    assembly_code = compile_code('foo.cc', ['void foo() { return; }'], 'gcc',
-                                 '', 'intel')
+    assembly_code = compile_code('foo.cc', ['void foo() { return; }'])
     assert len(assembly_code) != 0
 
 
