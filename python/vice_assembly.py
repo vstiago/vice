@@ -7,8 +7,9 @@ from typing import Iterator, List, Set, Tuple
 import cxxfilt
 
 
-def assembly(source_name: str, source_lines: List[str], compiler: str,
-             parameters: str, syntax: str):
+def compile_code(source_name: str, source_lines: List[str],
+                 compiler: str = 'gcc', parameters: str = '',
+                 syntax: str = 'intel') -> List[str]:
     split_path = os.path.splitext(source_name)
     current_extension = split_path[1] if len(split_path) > 1 else None
 
@@ -20,19 +21,23 @@ def assembly(source_name: str, source_lines: List[str], compiler: str,
         print(line, file=tmp_file)
     tmp_file.close()
 
-    cmd = [compiler, tmp_file.name, '-g1', '-masm=' + syntax, '-S', '-o', '-']
+    cmd = [compiler, '-g1', '-S', '-o', '-']
     cmd += filter(None, parameters.split(' '))
+    if len(syntax) != 0:
+        cmd += ['-masm=' + syntax]
+    cmd += [tmp_file.name]
+
     # print(cmd)
     try:
-        code_ass = subprocess.check_output(cmd)
+        result = subprocess.check_output(cmd)
     except subprocess.CalledProcessError as err:
         print('Failed to compile.', err)
-        return None, None
+        return []
     except FileNotFoundError as err:
         print('File not found.', err)
-        return None, None
+        return []
 
-    return tmp_file, str(code_ass, 'ascii').splitlines()
+    return str(result, 'ascii').splitlines()
 
 
 def parse_used_labels(lines: List[str]) -> Set[str]:

@@ -1,38 +1,32 @@
 import pytest
 
-from ..python.vice_assembly import assembly, parse_used_labels, trim_comment, \
+from ..python.vice_assembly import compile_code, parse_used_labels, \
+    trim_comment, \
     map_assembly_lines, LabelFilter
 
 
-def test_assembly_no_extension():
-    tmp_file, assembly_code = assembly('no_extension',
-                                       ['void foo() { return; }'], 'gcc', '',
-                                       'intel')
-    assert tmp_file is not None
-    assert assembly_code is not None
+def test_compile_code_no_extension():
+    assembly_code = compile_code('no_extension', ['void foo() { return; }'],
+                                 'gcc', '-x c', 'intel')
+    assert len(assembly_code) != 0
 
 
-def test_assembly_invalid_compiler():
-    tmp_file, assembly_code = assembly('foo.cc', ['void foo() { return; }'],
-                                       'invalid_compiler',
-                                       '-x c', 'intel')
-    assert tmp_file is None
-    assert assembly_code is None
+def test_compile_code_invalid_compiler():
+    assembly_code = compile_code('foo.cc', ['void foo() { return; }'],
+                                 'invalid_compiler', '', 'intel')
+    assert len(assembly_code) == 0
 
 
-def test_assembly_failed_to_compile():
-    tmp_file, assembly_code = assembly('foo.cc', ['void foo() { return; '],
-                                       'gcc', '-x c',
-                                       'intel')
-    assert tmp_file is None
-    assert assembly_code is None
+def test_compile_code_failed_to_compile():
+    assembly_code = compile_code('foo.cc', ['void foo() { return; '], 'gcc', '',
+                                 'intel')
+    assert len(assembly_code) == 0
 
 
-def test_assembly():
-    tmp_file, assembly_code = assembly('foo.cc', ['void foo() { return; }'],
-                                       'gcc', '', 'intel')
-    assert tmp_file is not None
-    assert assembly_code is not None
+def test_compile_code():
+    assembly_code = compile_code('foo.cc', ['void foo() { return; }'], 'gcc',
+                                 '', 'intel')
+    assert len(assembly_code) != 0
 
 
 def test_parse_used_labels():

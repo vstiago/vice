@@ -83,8 +83,8 @@ def view_assembly(compiler='gcc', parameters='', syntax='intel'):
     if cur_buffer.name.endswith('.s'):
         return
 
-    tmp_file, assembly_code = assembly(cur_buffer.name, cur_buffer[:], compiler,
-                                       parameters, syntax)
+    tmp_file, assembly_code = compile_code(cur_buffer.name, cur_buffer[:], compiler,
+                                           parameters, syntax)
     if tmp_file is None:
         return
 
