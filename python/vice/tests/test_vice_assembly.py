@@ -1,6 +1,6 @@
 import pytest
 
-from ..python.vice_assembly import compile_code, parse_used_labels, \
+from ..assembly import compile_code, parse_used_labels, \
     trim_comment, \
     map_assembly_lines, LabelFilter
 

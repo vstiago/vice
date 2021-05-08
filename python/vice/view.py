@@ -1,8 +1,9 @@
 from enum import Enum
 
 import vim
+import tempfile
 
-from vice_assembly import *
+from vice.assembly import compile_code, parse_assembly
 
 window_map = {}
 
@@ -13,7 +14,7 @@ class WindowType(Enum):
 
 
 class ViceWindow:
-    def __init__(self, window, window_type, tmp_file):
+    def __init__(self, window, window_type, tmp_file=None):
         self.window = window
         self.buffer = window.buffer
         self.window_type = window_type
@@ -24,7 +25,7 @@ class ViceWindow:
 
 
 class ViceSrcWindow(ViceWindow):
-    def __init__(self, window, tmp_file):
+    def __init__(self, window, tmp_file=None):
         super().__init__(self, window, WindowType.Source, tmp_file)
         self.mirrors = {}
 
@@ -83,17 +84,15 @@ def view_assembly(compiler='gcc', parameters='', syntax='intel'):
     if cur_buffer.name.endswith('.s'):
         return
 
-    tmp_file, assembly_code = compile_code(cur_buffer.name, cur_buffer[:], compiler,
+    assembly_code = compile_code(cur_buffer.name, cur_buffer[:], compiler,
                                            parameters, syntax)
-    if tmp_file is None:
+    if len(assembly_code) == 0:
         return
 
     cur_window = window_map.get(cur_buffer)
     if cur_window is None:
-        cur_window = ViceWindow(vim.current.window, WindowType.SOURCE, tmp_file)
+        cur_window = ViceWindow(vim.current.window, WindowType.SOURCE)
         window_map[cur_buffer] = cur_window
-    else:
-        cur_window.tmp_file = tmp_file
 
     src_window, dst_window = get_or_create_windows(vim.current.buffer)
 
